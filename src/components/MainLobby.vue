@@ -180,6 +180,13 @@ const isListening = ref(false)
 let recognition = null
 
 const startListening = () => {
+  if (isListening.value && recognition) {
+    // [NEW] 두 번째 눌렀을 때: 점수 계산 시작
+    submitInput()
+    recognition.stop()
+    return
+  }
+
   if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
     alert('이 브라우저는 음성 인식을 지원하지 않습니다. 크롬 브라우저를 사용해보세요!')
     return
@@ -187,7 +194,7 @@ const startListening = () => {
 
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
   recognition = new SpeechRecognition()
-  recognition.lang = 'ko-KR' // 한국어 설정
+  recognition.lang = 'ko-KR'
   recognition.interimResults = false 
   recognition.maxAlternatives = 1
 
@@ -206,19 +213,11 @@ const startListening = () => {
     } else {
       userInput.value = transcript
     }
-    
-    // [NEW] 음성 인식이 끝나면 자동으로 '완료' 버튼 누른 것 처럼 평가 진행
-    setTimeout(() => {
-      submitInput()
-    }, 500) // 0.5초 대기 후 전송 (사용자가 입력된 텍스트를 잠시 볼 수 있게)
   }
 
   recognition.onerror = (event) => {
     console.error('Speech recognition error', event.error)
     isListening.value = false
-    if (event.error === 'not-allowed') {
-      alert('마이크 사용 권한이 필요합니다 설정에서 허용해주세요.')
-    }
   }
 
   recognition.start()
@@ -1038,7 +1037,7 @@ const startListening = () => {
 
 /* 완료 버튼 - 하늘색 계열 */
 .finish-btn {
-  background-color: #81d4fa;
+  background-color: #26a69a; /* 청녹색 (Teal) */
   color: white;
 }
 

@@ -167,6 +167,13 @@ const isListening = ref(false)
 let recognition = null
 
 const startListening = () => {
+  if (isListening.value && recognition) {
+    // [NEW] 두 번째 눌렀을 때: 이야기 생성 시작
+    submitPrompt()
+    recognition.stop()
+    return
+  }
+
   if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
     alert('이 브라우저는 음성 인식을 지원하지 않습니다. 크롬 브라우저를 사용해보세요!')
     return
@@ -174,8 +181,8 @@ const startListening = () => {
 
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
   recognition = new SpeechRecognition()
-  recognition.lang = 'ko-KR' // 한국어 설정
-  recognition.interimResults = false // 중간 결과 사용 안 함 (완료 시 입력)
+  recognition.lang = 'ko-KR'
+  recognition.interimResults = false
   recognition.maxAlternatives = 1
 
   recognition.onstart = () => {
@@ -188,7 +195,6 @@ const startListening = () => {
 
   recognition.onresult = (event) => {
     const transcript = event.results[0][0].transcript
-    // 기존 입력값 뒤에 이어붙이기 (공백 추가)
     if (userPrompt.value) {
       userPrompt.value += ' ' + transcript
     } else {
@@ -199,9 +205,6 @@ const startListening = () => {
   recognition.onerror = (event) => {
     console.error('Speech recognition error', event.error)
     isListening.value = false
-    if (event.error === 'not-allowed') {
-      alert('마이크 사용 권한이 필요합니다 설정에서 허용해주세요.')
-    }
   }
 
   recognition.start()
@@ -277,7 +280,7 @@ const startListening = () => {
             @keydown="handleKeyDown"
           ></textarea>
           
-          <button class="submit-btn" :disabled="promptStatus.type !== 'good' || isLoading" @click="submitPrompt">
+          <button class="submit-btn" :disabled="isLoading" @click="submitPrompt">
             {{ isLoading ? '생성 중...' : '이야기 만들기 ✨' }}
           </button>
         </div>
@@ -605,7 +608,7 @@ const startListening = () => {
   position: absolute; 
   bottom: 15px; 
   right: 15px; 
-  background: linear-gradient(135deg, #7DA0FF, #5C85FF); 
+  background: #26a69a; /* 청녹색 (Teal) */
   color: white; 
   border: none; 
   padding: 12px 20px; 
@@ -613,7 +616,7 @@ const startListening = () => {
   font-weight: bold;
   cursor: pointer;
   transition: all 0.3s; 
-  box-shadow: 0 4px 15px rgba(92,133,255,0.4);
+  box-shadow: 0 4px 15px rgba(38, 166, 154, 0.4);
 }
 .submit-btn:active { transform: scale(0.9); }
 .submit-btn:disabled { background: #eee; color: #ccc; cursor: not-allowed; box-shadow: none; }
@@ -800,7 +803,7 @@ const startListening = () => {
 .finish-btn {
   width: 100%; padding: 16px 0; border-radius: 30px;
   border: none; font-size: 1.1rem; font-weight: bold;
-  cursor: pointer; background-color: #81d4fa; color: white;
+  cursor: pointer; background-color: #26a69a; color: white;
   transition: transform 0.2s;
 }
 .finish-btn:active { transform: scale(0.96); }
