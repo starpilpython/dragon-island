@@ -369,7 +369,6 @@ const startListening = () => {
               @click="startListening"
             >
               <span class="mic-emoji">🎙️</span>
-              <span class="record-text">{{ isListening ? '듣고 있어요...' : '눌러서 말하기' }}</span>
             </button>
           </div>
 
@@ -1066,8 +1065,10 @@ const startListening = () => {
   gap: 12px;
   background: white;
   border: none;
-  border-radius: 50px; /* 알약 형태 */
-  padding: 12px 28px;
+  border-radius: 50%; /* 원형 버튼 */
+  width: 60px;
+  height: 60px;
+  padding: 0;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 8px 20px rgba(125, 160, 255, 0.15);
