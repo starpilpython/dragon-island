@@ -313,7 +313,7 @@ const myUid = currentUid
     <div class="tabs">
       <button 
         class="tab-btn" 
-        :class="{ active: activeTab === 'all' }"
+        :class="{ 'active-all': activeTab === 'all' }"
         @click="activeTab = 'all'"
       >
         🌏 모두의 드래곤
@@ -514,8 +514,14 @@ const myUid = currentUid
   transition: all 0.2s;
 }
 
+.tab-btn.active-all {
+  background: #26a69a; /* 청녹색 (Teal) */
+  color: white;
+  box-shadow: 0 4px 10px rgba(38, 166, 154, 0.3);
+}
+
 .tab-btn.active {
-  background: #7e57c2; /* 커뮤니티 테마색: 보라색 */
+  background: #7e57c2; /* 공유 관리: 보라색 유지 */
   color: white;
   box-shadow: 0 4px 10px rgba(126, 87, 194, 0.3);
 }
