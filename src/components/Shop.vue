@@ -22,28 +22,49 @@ const closeModal = () => {
   isModalOpen.value = false
 }
 
-onMounted(() => {
-  // 결제 성공 및 탭 이동 처리
-  const urlParams = new URLSearchParams(window.location.search)
+  onMounted(async () => {
+    // 결제 성공 및 탭 이동 처리
+    const urlParams = new URLSearchParams(window.location.search)
+    
+    // 1) 특정 탭으로 이동 (머니구매 등)
+    const targetTab = urlParams.get('shopTab')
+    if (targetTab && tabs.find(t => t.id === targetTab)) {
+      currentTab.value = targetTab
+    }
   
-  // 1) 특정 탭으로 이동 (머니구매 등)
-  const targetTab = urlParams.get('shopTab')
-  if (targetTab && tabs.find(t => t.id === targetTab)) {
-    currentTab.value = targetTab
-  }
+    // 2) 결제 성공 알림 및 [NEW] 골드 즉시 지급 (Claim)
+    if (urlParams.get('payment') === 'success') {
+      const pendingItemId = localStorage.getItem('pending_item_id')
+      if (pendingItemId) {
+        try {
+           const idToken = localStorage.getItem('idToken')
+           if (idToken) {
+               // 백엔드에 지급 요청 (Webhook 실패 대비)
+               const response = await axios.post(`${import.meta.env.VITE_API_URL}/api/payment/claim`, {
+                   idToken: idToken,
+                   item_id: pendingItemId
+               })
+               
+               if (response.data.status === 'success') {
+                   console.log('골드 지급 완료:', response.data)
+                   emit('update:money', response.data.new_money)
+                   localStorage.removeItem('pending_item_id') // 지급 후 삭제
+               }
+           }
+        } catch (error) {
+            console.error('골드 지급 실패 (Webhook이 처리했거나 오류 발생):', error)
+            // 이미 지급되었거나 에러가 나도, 사용자에게는 성공 메시지를 보여줍니다 (Webhook이 돌고 있을 수 있음)
+        }
+      }
 
-  // 2) 결제 성공 알림
-  if (urlParams.get('payment') === 'success') {
-    // 이제 서버(webhook)에서 안전하게 골드를 지급하므로, 
-    // 프론트엔드에서는 안내 메시지만 표시합니다.
-    openModal('결제가 완료되었습니다! 머니가 충전될 때까지 잠시만 기다려 주세요. ✨', 'success')
-    emit('refresh-profile')
-
-    // URL 파라미터 제거하여 다시 열릴 때 모달이 뜨지 않게 함
-    const newUrl = window.location.pathname
-    window.history.replaceState({}, document.title, newUrl)
-  }
-})
+      openModal('결제가 완료되었습니다! 머니가 충전되었습니다. ✨', 'success')
+      emit('refresh-profile')
+  
+      // URL 파라미터 제거하여 다시 열릴 때 모달이 뜨지 않게 함
+      const newUrl = window.location.pathname
+      window.history.replaceState({}, document.title, newUrl)
+    }
+  })
 
 const currentTab = ref('eggs') // 'eggs', 'story', 'gold'
 
@@ -96,6 +117,9 @@ const handleBuy = async (item) => {
       })
 
       if (response.data.checkout_url) {
+        // [NEW] 결제 성공 시 지급을 위해 로컬 스토리지에 아이템 ID 저장
+        localStorage.setItem('pending_item_id', item.id)
+        
         // Polar 결제 페이지로 리다이렉트
         window.location.href = response.data.checkout_url
       }

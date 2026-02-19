@@ -63,16 +63,13 @@ const currentExampleIndex = ref(0)
 const promptStatus = computed(() => {
   const text = userPrompt.value.trim()
   if (text.length === 0) return { type: 'empty', msg: '' }
-  if (text.length < 10) return { type: 'bad', msg: '🧐 이야기가 너무 짧아! 조금 더 자세히 말해줘.' }
+  if (text.length < 5) return { type: 'bad', msg: '🧐 이야기가 너무 짧아! 조금 더 자세히 말해줘.' }
   
-  // AI 리터러시 체크 (대상, 방법, 상태 중 하나라도 유도)
-  const hasTarget = text.includes('에서') || text.includes('에게')
-  const hasMethod = text.includes('하게') || text.includes('으로') || text.includes('히')
+  // AI 리터러시 체크 (완화: 단순히 글자 수만 확인)
+  // 사용자가 "~다", "~해" 등을 붙이지 않아도 자유롭게 입력 가능하도록 변경
+  if (text.length < 2) return { type: 'bad', msg: '🧐 이야기가 너무 짧아! 조금 더 길게 말해줄래?' }
   
-  if (!hasTarget) return { type: 'warning', msg: '🤔 어디서(~에서) 혹은 누구에게 하는 모험이야?' }
-  if (!hasMethod) return { type: 'warning', msg: '✨ 어떻게(~하게/히) 하는지도 알려주면 좋겠어!' }
-  
-  return { type: 'good', msg: '✨ 완벽해! 아주 멋진 모험이 될 거야!' }
+  return { type: 'good', msg: '✨ 멋진 이야기야! 바로 시작해보자!' }
 })
 
 const currentPlaceholder = computed(() => {
@@ -167,6 +164,51 @@ const handleKeyDown = (e) => {
     submitPrompt()
   }
 }
+
+// [NEW] 음성 인식 (STT) 로직 - Web Speech API
+const isListening = ref(false)
+let recognition = null
+
+const startListening = () => {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    alert('이 브라우저는 음성 인식을 지원하지 않습니다. 크롬 브라우저를 사용해보세요!')
+    return
+  }
+
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+  recognition = new SpeechRecognition()
+  recognition.lang = 'ko-KR' // 한국어 설정
+  recognition.interimResults = false // 중간 결과 사용 안 함 (완료 시 입력)
+  recognition.maxAlternatives = 1
+
+  recognition.onstart = () => {
+    isListening.value = true
+  }
+
+  recognition.onend = () => {
+    isListening.value = false
+  }
+
+  recognition.onresult = (event) => {
+    const transcript = event.results[0][0].transcript
+    // 기존 입력값 뒤에 이어붙이기 (공백 추가)
+    if (userPrompt.value) {
+      userPrompt.value += ' ' + transcript
+    } else {
+      userPrompt.value = transcript
+    }
+  }
+
+  recognition.onerror = (event) => {
+    console.error('Speech recognition error', event.error)
+    isListening.value = false
+    if (event.error === 'not-allowed') {
+      alert('마이크 사용 권한이 필요합니다 설정에서 허용해주세요.')
+    }
+  }
+
+  recognition.start()
+}
 </script>
 
 <template>
@@ -220,6 +262,15 @@ const handleKeyDown = (e) => {
         </div>
 
         <div class="input-group square-box" :class="{ 'valid-border': promptStatus.type === 'good', 'focus-border': isFocused }">
+          <!-- [NEW] 마이크 버튼 -->
+          <button 
+            class="mic-btn" 
+            :class="{ listening: isListening }"
+            @click="startListening"
+            title="말로 입력하기"
+          >
+            🎙️
+          </button>
           <textarea 
             v-model="userPrompt" 
             :placeholder="currentPlaceholder" 
@@ -549,6 +600,7 @@ const handleKeyDown = (e) => {
   line-height: 1.6; 
   resize: none; 
   font-family: inherit; 
+  padding-right: 40px; /* 마이크 버튼 공간 확보 */
 }
 .chat-input-area::placeholder { color: #ccc; font-size: 1rem; line-height: 1.4; white-space: pre-wrap; }
 
@@ -586,6 +638,44 @@ const handleKeyDown = (e) => {
   gap: 8px;
 }
 .library-toggle-btn:hover { background: #f0f4ff; }
+
+/* [NEW] 마이크 버튼 스타일 */
+.mic-btn {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: white;
+  border: 2px solid #eee;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  z-index: 10;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.mic-btn:hover {
+  background: #f9f9f9;
+  transform: scale(1.1);
+}
+
+.mic-btn.listening {
+  background: #ff6b6b;
+  color: white;
+  border-color: #ff6b6b;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(255, 107, 107, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(255, 107, 107, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 107, 107, 0); }
+}
 
 .loader {
     width: 24px;

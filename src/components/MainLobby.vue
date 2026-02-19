@@ -171,10 +171,53 @@ const toggleItem = (id) => {
 
 // [NEW] 현재 탭에 따른 배경 이미지 결정
 const currentBg = computed(() => {
-  if (activeTab.value === '보고서') return s10Bg
   if (activeTab.value === '커뮤니티') return s13Bg
   return s02Bg
 })
+
+// [NEW] 음성 인식 (STT) 로직 - Web Speech API
+const isListening = ref(false)
+let recognition = null
+
+const startListening = () => {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    alert('이 브라우저는 음성 인식을 지원하지 않습니다. 크롬 브라우저를 사용해보세요!')
+    return
+  }
+
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
+  recognition = new SpeechRecognition()
+  recognition.lang = 'ko-KR' // 한국어 설정
+  recognition.interimResults = false 
+  recognition.maxAlternatives = 1
+
+  recognition.onstart = () => {
+    isListening.value = true
+  }
+
+  recognition.onend = () => {
+    isListening.value = false
+  }
+
+  recognition.onresult = (event) => {
+    const transcript = event.results[0][0].transcript
+    if (userInput.value) {
+      userInput.value += ' ' + transcript
+    } else {
+      userInput.value = transcript
+    }
+  }
+
+  recognition.onerror = (event) => {
+    console.error('Speech recognition error', event.error)
+    isListening.value = false
+    if (event.error === 'not-allowed') {
+      alert('마이크 사용 권한이 필요합니다 설정에서 허용해주세요.')
+    }
+  }
+
+  recognition.start()
+}
 </script>
 
 <template>
@@ -323,6 +366,15 @@ const currentBg = computed(() => {
 
           <!-- [핵심] 텍스트 입력 영역 -->
           <div class="text-input-container">
+            <!-- [NEW] 마이크 버튼 -->
+            <button 
+              class="mic-btn" 
+              :class="{ listening: isListening }"
+              @click="startListening"
+              title="말로 입력하기"
+            >
+              🎙️
+            </button>
             <textarea 
               v-model="userInput" 
               :placeholder="placeholderText"
@@ -848,6 +900,7 @@ const currentBg = computed(() => {
 .text-input-container {
   width: 100%;
   margin-bottom: 25px;
+  position: relative; /* [NEW] 마이크 버튼 배치를 위해 */
 }
 
 .custom-textarea {
@@ -861,6 +914,7 @@ const currentBg = computed(() => {
   background-color: #fafafa;
   transition: border-color 0.2s;
   box-sizing: border-box; /* 패딩이 너비에 포함되도록 */
+  padding-right: 45px; /* 마이크 버튼 공간 확보 */
 }
 
 .custom-textarea:focus {
@@ -984,5 +1038,43 @@ const currentBg = computed(() => {
 
 .retry-btn:active, .finish-btn:active {
   transform: scale(0.96);
+}
+
+/* [NEW] 로비용 마이크 버튼 스타일 */
+.mic-btn {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: white;
+  border: 2px solid #eee;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  z-index: 10;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.mic-btn:hover {
+  background: #f9f9f9;
+  transform: scale(1.1);
+}
+
+.mic-btn.listening {
+  background: #ff6b6b;
+  color: white;
+  border-color: #ff6b6b;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(255, 107, 107, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(255, 107, 107, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 107, 107, 0); }
 }
 </style>
