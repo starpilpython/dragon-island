@@ -206,6 +206,11 @@ const startListening = () => {
     } else {
       userInput.value = transcript
     }
+    
+    // [NEW] 음성 인식이 끝나면 자동으로 '완료' 버튼 누른 것 처럼 평가 진행
+    setTimeout(() => {
+      submitInput()
+    }, 500) // 0.5초 대기 후 전송 (사용자가 입력된 텍스트를 잠시 볼 수 있게)
   }
 
   recognition.onerror = (event) => {
@@ -350,13 +355,23 @@ const startListening = () => {
         </div>
 
         <div class="modal-body">
-          <!-- [NEW] 상단 알록달록한 보이스 웨이브 애니메이션 -->
+          <!-- [NEW] 상단 알록달록한 보이스 웨이브 애니메이션 + 녹음 버튼 -->
           <div class="voice-wave-visual">
             <div class="wave-line"></div>
             <div class="wave-line"></div>
             <div class="wave-line"></div>
             <div class="wave-line"></div>
             <div class="wave-line"></div>
+            
+            <!-- [NEW] 녹음 버튼 (일렁이는 막대 옆으로 이동) -->
+            <button 
+              class="record-btn-large" 
+              :class="{ listening: isListening }"
+              @click="startListening"
+            >
+              <span class="mic-emoji">🎙️</span>
+              <span class="record-text">{{ isListening ? '듣고 있어요...' : '눌러서 말하기' }}</span>
+            </button>
           </div>
 
           <!-- 중앙 아이콘/설명 영역 -->
@@ -366,15 +381,6 @@ const startListening = () => {
 
           <!-- [핵심] 텍스트 입력 영역 -->
           <div class="text-input-container">
-            <!-- [NEW] 마이크 버튼 (강제 재삽입) -->
-            <button 
-              class="mic-btn" 
-              :class="{ listening: isListening }"
-              @click="startListening"
-              style="display: flex !important; visibility: visible !important;"
-            >
-              🎙️
-            </button>
             <textarea 
               v-model="userInput" 
               :placeholder="placeholderText"
@@ -1040,41 +1046,69 @@ const startListening = () => {
   transform: scale(0.96);
 }
 
-/* [NEW] 로비용 마이크 버튼 스타일 */
-.mic-btn {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background: white;
-  border: 2px solid #eee;
-  border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  font-size: 1.2rem;
-  cursor: pointer;
+/* [NEW] 일렁이는 막대 옆 큰 녹음 버튼 스타일 (프리미엄 디자인) */
+.voice-wave-visual {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s;
-  z-index: 10;
-  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  gap: 20px;
+  margin-bottom: 25px;
+  padding: 15px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 25px;
+  border: 2px solid rgba(125, 160, 255, 0.1);
 }
 
-.mic-btn:hover {
-  background: #f9f9f9;
-  transform: scale(1.1);
+.record-btn-large {
+  display: flex;
+  flex-direction: row; /* 가로 배열 */
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: white;
+  border: none;
+  border-radius: 50px; /* 알약 형태 */
+  padding: 12px 28px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 8px 20px rgba(125, 160, 255, 0.15);
+  outline: none;
 }
 
-.mic-btn.listening {
+.mic-emoji {
+  font-size: 1.5rem;
+}
+
+.record-text {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #7DA0FF;
+  letter-spacing: -0.5px;
+}
+
+.record-btn-large:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 25px rgba(125, 160, 255, 0.25);
+  background: #f8faff;
+}
+
+.record-btn-large.listening {
   background: #ff6b6b;
-  color: white;
-  border-color: #ff6b6b;
-  animation: pulse 1.5s infinite;
+  box-shadow: 0 8px 25px rgba(255, 107, 107, 0.4);
+  animation: pulseLarge 1.5s infinite;
 }
 
-@keyframes pulse {
-  0% { box-shadow: 0 0 0 0 rgba(255, 107, 107, 0.4); }
-  70% { box-shadow: 0 0 0 10px rgba(255, 107, 107, 0); }
+.record-btn-large.listening .record-text {
+  color: white;
+}
+
+.record-btn-large:active {
+  transform: translateY(0);
+}
+
+@keyframes pulseLarge {
+  0% { box-shadow: 0 0 0 0 rgba(255, 107, 107, 0.6); }
+  70% { box-shadow: 0 0 0 15px rgba(255, 107, 107, 0); }
   100% { box-shadow: 0 0 0 0 rgba(255, 107, 107, 0); }
 }
 </style>
