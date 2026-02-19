@@ -366,12 +366,12 @@ const startListening = () => {
 
           <!-- [핵심] 텍스트 입력 영역 -->
           <div class="text-input-container">
-            <!-- [NEW] 마이크 버튼 -->
+            <!-- [NEW] 마이크 버튼 (강제 재삽입) -->
             <button 
               class="mic-btn" 
               :class="{ listening: isListening }"
               @click="startListening"
-              title="말로 입력하기"
+              style="display: flex !important; visibility: visible !important;"
             >
               🎙️
             </button>

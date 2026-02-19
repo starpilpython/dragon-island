@@ -63,10 +63,7 @@ const currentExampleIndex = ref(0)
 const promptStatus = computed(() => {
   const text = userPrompt.value.trim()
   if (text.length === 0) return { type: 'empty', msg: '' }
-  if (text.length < 5) return { type: 'bad', msg: '🧐 이야기가 너무 짧아! 조금 더 자세히 말해줘.' }
-  
-  // AI 리터러시 체크 (완화: 단순히 글자 수만 확인)
-  // 사용자가 "~다", "~해" 등을 붙이지 않아도 자유롭게 입력 가능하도록 변경
+  // [최종 수정] 2글자 이상이면 무조건 통과! 
   if (text.length < 2) return { type: 'bad', msg: '🧐 이야기가 너무 짧아! 조금 더 길게 말해줄래?' }
   
   return { type: 'good', msg: '✨ 멋진 이야기야! 바로 시작해보자!' }
