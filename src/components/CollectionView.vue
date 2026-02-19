@@ -36,6 +36,11 @@ const openResultModal = (message, type = 'info') => {
 
 const closeResultModal = () => {
   isResultModalOpen.value = false
+  // [NEW] 삭제 성공 시에만 모달을 닫을 때 데이터 갱신
+  if (resultModalType.value === 'success') {
+    fetchDragons()
+    emit('refresh-profile')
+  }
 }
 
 // 드래곤 목록 가져오기
@@ -147,12 +152,12 @@ const deleteDragon = async (dragonId) => {
     isDetailOpen.value = false
     dragonToDelete.value = null
     
-    // 부모(App.vue)에게 프로필 갱신 요청 (머니 업데이트)
-    emit('refresh-profile')
-    fetchDragons() // 목록 새로고침
+    // [MODIFIED] fetchDragons()는 이제 closeResultModal에서 수행함
   } catch (error) {
     console.error('드래곤 삭제 실패:', error)
     openResultModal('삭제 중에 오류가 발생했습니다.', 'error')
+  } finally {
+    isLoading.value = false // 로딩 상태 해제
   }
 }
 
